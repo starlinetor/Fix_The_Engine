@@ -1,6 +1,9 @@
+from turtle import position
 from mazelib import Maze
 from mazelib.generate.Prims import Prims
 from PIL import Image
+
+import pins_utils
 
 def gen_maze_sprite(width : int, height: int, seed:int) -> Image.Image:
     """Generates a new maze sprite
@@ -21,7 +24,6 @@ def gen_maze_sprite(width : int, height: int, seed:int) -> Image.Image:
     m.generate()
     
     maze_grid_image : list[tuple[int,...]] = []
-
     for row in m.grid:
         for element in row:
             #white pixel, transparent if element is 0
@@ -30,6 +32,49 @@ def gen_maze_sprite(width : int, height: int, seed:int) -> Image.Image:
     img = Image.new('RGBA', (pixel_width, pixel_height))
     img.putdata(maze_grid_image)
     img.save('maze.png')
+    return img
+
+def gen_maze_sprite_pins(width : int, height: int, seed:int, pins : list[pins_utils.pin]) -> Image.Image:
+    """Generates a new maze sprite
+
+    Args:
+        width (int): height of maze, in number of hallways
+        height (int): width of maze, in number of hallways
+        seed (int): seed to generate the maze
+
+    Returns:
+        Image: maze image using the PIL.Image library
+    """
+    pixel_width : int = width*2+1
+    pixel_height : int = height*2+1
+    
+    m = Maze(seed)
+    m.generator = Prims(width, height)
+    m.generate()
+    
+    maze_grid_image : list[tuple[int,...]] = []
+    skip = False
+    i : int = 0
+    for row in m.grid:
+        i = i+1
+        j : int = 0
+        for element in row:
+            j = j+1
+            for pin in pins:
+                if ((j-2)/2,(i-2)/2) == pin.position:
+                    skip = True
+                    maze_grid_image.append((24, 240, 0,255))
+                    break
+            if skip == True:
+                skip = False
+                continue
+            #white pixel, black if element is 0
+            maze_grid_image.append((int(element)*255,int(element)*255,int(element)*255,255))
+
+    img = Image.new('RGBA', (pixel_width, pixel_height))
+    img.putdata(maze_grid_image)
+    img = img.resize((pixel_width*30,pixel_height*30), Image.Resampling.NEAREST)
+    img.save('maze_pin.png')
     return img
 
 def gen_empty_maze_sprite(width : int, height: int) -> Image.Image:
